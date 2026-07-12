@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semiconductor Tracker — SMH ∪ SOXX</title>
+<style>
+  :root {
+    --page:      #f9f9f7;
+    --surface:   #fcfcfb;
+    --ink:       #0b0b0b;
+    --ink-2:     #52514e;
+    --muted:     #898781;
+    --grid:      #e1e0d9;
+    --border:    rgba(11,11,11,0.10);
+    --accent:    #2a78d6;
+    --good:      #006300;
+    --bad:       #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page:    #0d0d0d;
+      --surface: #1a1a19;
+      --ink:     #ffffff;
+      --ink-2:   #c3c2b7;
+      --muted:   #898781;
+      --grid:    #2c2c2a;
+      --border:  rgba(255,255,255,0.10);
+      --accent:  #3987e5;
+      --good:    #0ca30c;
+      --bad:     #d03b3b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px 48px; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  h1 { font-size: 20px; font-weight: 650; margin: 0; }
+  .sub { color: var(--ink-2); font-size: 13px; margin: 2px 0 0; }
+  .asof { color: var(--muted); font-size: 12.5px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 18px 0; }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .tile .label { color: var(--ink-2); font-size: 12.5px; }
+  .tile .value { font-size: 26px; font-weight: 600; margin-top: 2px; }
+  .tile .note  { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  .controls { display: flex; gap: 10px; align-items: center; margin: 6px 0 12px; flex-wrap: wrap; }
+  .controls input {
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 10px; font: inherit; width: 220px;
+  }
+  .controls input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button {
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 14px; font: inherit; cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { color: var(--muted); cursor: default; }
+  .status { color: var(--ink-2); font-size: 13px; }
+  .status .err { color: var(--bad); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 880px; }
+  th, td { padding: 8px 12px; text-align: right; white-space: nowrap; }
+  th:nth-child(-n+3), td:nth-child(-n+3) { text-align: left; }
+  thead th {
+    color: var(--ink-2); font-weight: 600; font-size: 12.5px;
+    border-bottom: 1px solid var(--grid);
+    cursor: pointer; user-select: none;
+    position: sticky; top: 0; background: var(--surface);
+  }
+  thead th .arrow { color: var(--accent); }
+  tbody td { border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  td.sym { font-weight: 600; }
+  td.name { color: var(--ink-2); max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
+  .chip {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    color: var(--ink-2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 1px 7px; margin-right: 4px;
+  }
+  .chip.both { color: var(--accent); border-color: var(--accent); }
+  .pos { color: var(--good); }
+  .neg { color: var(--bad); }
+  .na  { color: var(--muted); }
+  footer { color: var(--muted); font-size: 12px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Semiconductor tracker</h1>
+      <p class="sub">Every holding of SMH and SOXX, deduplicated — valuation and analyst growth forecasts</p>
+    </div>
+    <span class="asof" id="asof"></span>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="controls">
+    <input id="search" type="search" placeholder="Filter by ticker or name…" autocomplete="off">
+    <button id="refresh">Refresh data</button>
+    <span class="status" id="status"></span>
+  </div>
+
+  <div class="card">
+    <table id="tbl">
+      <thead><tr id="headrow"></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    P/E, forward P/E, PEG and 1-yr growth (analyst next-year EPS estimate) from Yahoo Finance.
+    5-yr growth is Finviz "EPS next 5Y" (annualized). Holdings from stockanalysis.com. “—” = not available
+    (usually negative or no earnings). Not investment advice.
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const num = (v, d) => v == null ? null : v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = v => v == null ? null : (v > 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+function cap(v) {
+  if (v == null) return null;
+  if (v >= 1e12) return "$" + (v / 1e12).toFixed(2) + "T";
+  if (v >= 1e9)  return "$" + (v / 1e9).toFixed(1) + "B";
+  return "$" + (v / 1e6).toFixed(0) + "M";
+}
+const median = a => {
+  const s = a.filter(v => v != null).sort((x, y) => x - y);
+  if (!s.length) return null;
+  return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+};
+
+const COLS = [
+  { key: "symbol",     label: "Ticker" },
+  { key: "name",       label: "Company" },
+  { key: "etfs",       label: "ETF" },
+  { key: "price",      label: "Price",    fmt: v => num(v, 2) },
+  { key: "market_cap", label: "Mkt cap",  fmt: cap },
+  { key: "pe",         label: "P/E",      fmt: v => num(v, 1) },
+  { key: "forward_pe", label: "Fwd P/E",  fmt: v => num(v, 1) },
+  { key: "peg",        label: "PEG",      fmt: v => num(v, 2) },
+  { key: "growth_1y",  label: "Growth 1Y", fmt: pct, signed: true },
+  { key: "growth_5y",  label: "Growth 5Y", fmt: pct, signed: true },
+];
+let rows = [], sortKey = "market_cap", sortDir = -1, wasRunning = false;
+
+function renderHead() {
+  $("headrow").innerHTML = COLS.map(c =>
+    `<th data-key="${c.key}">${c.label}${c.key === sortKey ? ` <span class="arrow">${sortDir < 0 ? "▾" : "▴"}</span>` : ""}</th>`
+  ).join("");
+  for (const th of $("headrow").children) {
+    th.onclick = () => {
+      const k = th.dataset.key;
+      if (k === sortKey) sortDir = -sortDir;
+      else { sortKey = k; sortDir = (k === "symbol" || k === "name" || k === "etfs") ? 1 : -1; }
+      renderHead(); renderRows();
+    };
+  }
+}
+
+function renderRows() {
+  const q = $("search").value.trim().toLowerCase();
+  let view = rows.filter(r => !q || r.symbol.toLowerCase().includes(q) || (r.name || "").toLowerCase().includes(q));
+  view.sort((a, b) => {
+    let x = a[sortKey], y = b[sortKey];
+    if (sortKey === "etfs") { x = x.length; y = y.length; }
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;           // nulls always last
+    if (y == null) return -1;
+    if (typeof x === "string") return x.localeCompare(y) * sortDir;
+    return (x - y) * sortDir;
+  });
+  $("rows").innerHTML = view.map(r => "<tr>" + COLS.map(c => {
+    if (c.key === "symbol") return `<td class="sym">${r.symbol}</td>`;
+    if (c.key === "name")   return `<td class="name" title="${r.name || ""}">${r.name || ""}</td>`;
+    if (c.key === "etfs") {
+      const both = r.etfs.length === 2;
+      return `<td>${both ? `<span class="chip both">Both</span>` : r.etfs.map(e => `<span class="chip">${e}</span>`).join("")}</td>`;
+    }
+    const v = r[c.key], txt = c.fmt(v);
+    if (txt == null) return `<td class="na">—</td>`;
+    const cls = c.signed ? (v > 0 ? "pos" : v < 0 ? "neg" : "") : "";
+    return `<td class="${cls}">${txt}</td>`;
+  }).join("") + "</tr>").join("");
+}
+
+function renderTiles() {
+  const both = rows.filter(r => r.etfs.length === 2).length;
+  const tiles = [
+    { label: "Median P/E", value: num(median(rows.map(r => r.pe)), 1) ?? "—",
+      note: `${rows.length} stocks, ${both} in both ETFs` },
+    { label: "Median fwd P/E", value: num(median(rows.map(r => r.forward_pe)), 1) ?? "—" },
+    { label: "Median PEG", value: num(median(rows.map(r => r.peg)), 2) ?? "—" },
+    { label: "Median growth 1Y", value: pct(median(rows.map(r => r.growth_1y))) ?? "—" },
+    { label: "Median growth 5Y", value: pct(median(rows.map(r => r.growth_5y))) ?? "—" },
+  ];
+  $("tiles").innerHTML = tiles.map(t =>
+    `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div>${t.note ? `<div class="note">${t.note}</div>` : ""}</div>`
+  ).join("");
+}
+
+async function poll() {
+  const res = await fetch("/api/data");
+  const { cache, progress } = await res.json();
+  const btn = $("refresh"), status = $("status");
+
+  if (progress.running) {
+    wasRunning = true;
+    btn.disabled = true;
+    const phase = { holdings: "Fetching ETF holdings…", yahoo: "Yahoo Finance", finviz: "Finviz 5Y growth" }[progress.phase] || "";
+    status.textContent = progress.total
+      ? `${phase} ${progress.done}/${progress.total}` : phase;
+    setTimeout(poll, 1500);
+  } else {
+    btn.disabled = false;
+    status.innerHTML = progress.error ? `<span class="err">Refresh failed: ${progress.error}</span>` : "";
+    if (cache === null && !progress.error) { setTimeout(poll, 1500); }
+  }
+
+  if (cache) {
+    // re-render only on first load or when a refresh just finished
+    if (!rows.length || (!progress.running && wasRunning)) {
+      wasRunning = false;
+      rows = cache.rows;
+      $("asof").textContent = "Data as of " + new Date(cache.updated).toLocaleString();
+      renderTiles(); renderHead(); renderRows();
+    }
+  }
+}
+
+$("search").addEventListener("input", renderRows);
+$("refresh").onclick = async () => {
+  await fetch("/api/refresh", { method: "POST" });
+  poll();
+};
+poll();
+</script>
+</body>
+</html>
