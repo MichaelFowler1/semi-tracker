@@ -5,6 +5,8 @@ SOXX (iShares) semiconductor ETFs — deduplicated, so overlapping names appear
 once with a "Both" badge — and shows valuation and analyst growth metrics in a
 sortable dashboard.
 
+![Dashboard screenshot](docs/screenshot.png)
+
 ## Run it
 
 ```powershell
