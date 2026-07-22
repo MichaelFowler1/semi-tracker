@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "semi-tracker"
+abstract: "Dashboard tracking every SMH/SOXX semiconductor holding: P/E, forward P/E, PEG, 1Y/5Y analyst growth forecasts"
+authors:
+  - family-names: "Fowler"
+    given-names: "Michael"
+    alias: "MichaelFowler1"
+repository-code: "https://github.com/MichaelFowler1/semi-tracker"
+url: "https://github.com/MichaelFowler1/semi-tracker"
+license: "Apache-2.0"
+date-released: "2026-07-12"
