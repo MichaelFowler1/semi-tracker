@@ -1,3 +1,6 @@
+# Copyright 2026 Michael Fowler
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 """Flask server for the semiconductor stock tracker.
 
 Serves the dashboard and a small JSON API. The first request kicks off a

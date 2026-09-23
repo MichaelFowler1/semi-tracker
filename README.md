@@ -55,3 +55,15 @@ estimate.
 - `app.py` — Flask server + tiny JSON API (`/api/data`, `/api/refresh`)
 - `templates/index.html` — the dashboard (vanilla JS, no build step)
 - `data/cache.json` — last fetched snapshot with timestamp
+
+## License
+
+Everything in this repository from this change on is under the
+[PolyForm Noncommercial License 1.0.0](LICENSE). Earlier commits were released
+under the Apache License 2.0 and stay under it. In plain terms: it is free for
+any noncommercial purpose, and for schools and universities, public research
+organizations, government institutions and charities, whatever their funding.
+Commercial use needs a license from the author: ask through
+[the issue tracker](https://github.com/MichaelFowler1/semi-tracker/issues). Anyone who
+passes on a copy has to pass on the license and the `Required Notice:` line in
+[NOTICE](NOTICE). This is a plain summary; the LICENSE file is what governs.
